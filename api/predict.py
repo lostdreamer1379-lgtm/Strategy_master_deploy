@@ -12,14 +12,12 @@ import os
 import sys
 import json
 import traceback
-from http.server import BaseHTTPRequestHandler
-
-import numpy as np
-import joblib
-import xgboost as xgb
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import utils  # noqa: E402
+from rf_native import NativeRandomForest  # noqa: E402
+from xgb_native import NativeXGBModel  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(HERE, '../models')
@@ -29,13 +27,10 @@ _state = {'loaded': False}
 
 
 def _try_load(path_json, path_pkl):
-    """Prefer XGBoost .json, fall back to sklearn .pkl. Returns (model, kind)."""
+    """Load a native XGBoost model. Production deployment uses JSON models."""
     if os.path.exists(path_json):
-        model = xgb.Booster()
-        model.load_model(path_json)
+        model = NativeXGBModel(path_json)
         return model, 'xgboost'
-    if os.path.exists(path_pkl):
-        return joblib.load(path_pkl), 'sklearn'
     return None, None
 
 
@@ -43,8 +38,9 @@ def load_models():
     if _state['loaded']:
         return
 
-    encoders_path = os.path.join(MODELS_DIR, 'label_encoders.pkl')
-    _state['encoders'] = joblib.load(encoders_path) if os.path.exists(encoders_path) else None
+    encoders_path = os.path.join(MODELS_DIR, 'label_encoders.json')
+    with open(encoders_path, 'r') as f:
+        _state['encoders'] = json.load(f)
 
     selected_path = os.path.join(PRODUCTION_DIR, 'SELECTED_MODELS.json')
     selected = {}
@@ -56,67 +52,54 @@ def load_models():
 
     # Degradation
     deg_json = os.path.join(PRODUCTION_DIR, 'model_degradation_BEST.json')
-    deg_pkl = os.path.join(PRODUCTION_DIR, 'model_degradation_BEST.pkl')
-    if not os.path.exists(deg_json) and not os.path.exists(deg_pkl):
+    deg_rf = os.path.join(PRODUCTION_DIR, 'model_degradation_BEST.rfbin')
+    if selected.get('degradation') == 'random_forest' and os.path.exists(deg_rf):
+        deg_model, deg_kind = NativeRandomForest(deg_rf), 'random_forest'
+    elif not os.path.exists(deg_json):
         deg_json = os.path.join(MODELS_DIR, 'xgb_degradation.json')  # fallback default
-    deg_model, deg_kind = _try_load(deg_json, deg_pkl)
+        deg_model, deg_kind = _try_load(deg_json, None)
+    else:
+        deg_model, deg_kind = _try_load(deg_json, None)
     _state['degradation_model'] = deg_model
     _state['degradation_kind'] = deg_kind
-    deg_scaler_path = os.path.join(PRODUCTION_DIR, 'scaler_degradation_BEST.pkl')
-    _state['degradation_scaler'] = joblib.load(deg_scaler_path) if os.path.exists(deg_scaler_path) else None
+    _state['degradation_scaler'] = None
     model_sources['degradation'] = selected.get('degradation', 'xgboost (default)')
 
     # Pit stop
     pit_json = os.path.join(PRODUCTION_DIR, 'model_pitstop_BEST.json')
-    pit_pkl = os.path.join(PRODUCTION_DIR, 'model_pitstop_BEST.pkl')
-    if not os.path.exists(pit_json) and not os.path.exists(pit_pkl):
+    if not os.path.exists(pit_json):
         pit_json = os.path.join(MODELS_DIR, 'xgb_pitstop.json')
-    pit_model, pit_kind = _try_load(pit_json, pit_pkl)
+    pit_model, pit_kind = _try_load(pit_json, None)
     _state['pitstop_model'] = pit_model
     _state['pitstop_kind'] = pit_kind
-    pit_scaler_path = os.path.join(PRODUCTION_DIR, 'scaler_pitstop_BEST.pkl')
-    _state['pitstop_scaler'] = joblib.load(pit_scaler_path) if os.path.exists(pit_scaler_path) else None
+    _state['pitstop_scaler'] = None
     model_sources['pitstop'] = selected.get('pitstop', 'xgboost (default)')
 
     # Fuel
     fuel_json = os.path.join(PRODUCTION_DIR, 'model_fuel_BEST.json')
-    fuel_pkl = os.path.join(PRODUCTION_DIR, 'model_fuel_BEST.pkl')
-    if not os.path.exists(fuel_json) and not os.path.exists(fuel_pkl):
+    if not os.path.exists(fuel_json):
         fuel_json = os.path.join(MODELS_DIR, 'xgb_fuel.json')
-    fuel_model, fuel_kind = _try_load(fuel_json, fuel_pkl)
+    fuel_model, fuel_kind = _try_load(fuel_json, None)
     _state['fuel_model'] = fuel_model
     _state['fuel_kind'] = fuel_kind
-    fuel_scaler_path = os.path.join(PRODUCTION_DIR, 'scaler_fuel_BEST.pkl')
-    _state['fuel_scaler'] = joblib.load(fuel_scaler_path) if os.path.exists(fuel_scaler_path) else None
+    _state['fuel_scaler'] = None
     model_sources['fuel'] = selected.get('fuel', 'xgboost (default)')
-
-    # SHAP explainers (optional — only exist for the tree/XGBoost models we trained SHAP on)
-    for key, fname in [('degradation', 'shap_explainer_deg.pkl'),
-                        ('pitstop', 'shap_explainer_pit.pkl'),
-                        ('fuel', 'shap_explainer_fuel.pkl')]:
-        p = os.path.join(MODELS_DIR, fname)
-        _state[f'{key}_explainer'] = joblib.load(p) if os.path.exists(p) else None
 
     _state['model_sources'] = model_sources
     _state['loaded'] = True
 
 
 def _predict_value(kind, model, scaler, X):
-    X = np.array(X).reshape(1, -1)
-    if kind == 'sklearn' and scaler is not None:
-        X_in = scaler.transform(X)
-    else:
-        X_in = X
-    pred = model.predict(xgb.DMatrix(X_in))[0] if kind == 'xgboost' else model.predict(X_in)[0]
+    X = list(X)
+    pred = model.predict(X)
     return float(pred), X
 
 
-def _shap_top_factors(explainer, X_raw, feature_names, top_n=5):
-    if explainer is None:
+def _shap_top_factors(model, X_raw, feature_names, top_n=5):
+    if model is None:
         return []
     try:
-        shap_values = explainer(np.array(X_raw).reshape(1, -1))
-        vals = shap_values.values[0]
+        vals = model.shap_values(X_raw)
         pairs = sorted(zip(feature_names, vals), key=lambda p: abs(p[1]), reverse=True)[:top_n]
         return [{'feature': name, 'impact': round(float(v), 4)} for name, v in pairs]
     except Exception:
@@ -154,19 +137,14 @@ def run_prediction(payload):
                                           _state['degradation_scaler'], X_deg)
     deg_rate = max(0.0, deg_rate)
     severity = 'low' if deg_rate < 2 else ('moderate' if deg_rate < 5 else 'high')
-    deg_factors = _shap_top_factors(_state['degradation_explainer'], X_deg, meta['degradation_features'])
+    deg_factors = _shap_top_factors(_state['degradation_model'], X_deg, meta['degradation_features'])
 
     # --- Pit stop ---
     X_pit = utils.build_feature_vector('pitstop', norm_payload, encoders)
     pit_model, pit_kind, pit_scaler = _state['pitstop_model'], _state['pitstop_kind'], _state['pitstop_scaler']
-    X_pit_arr = np.array(X_pit).reshape(1, -1)
-    X_pit_in = pit_scaler.transform(X_pit_arr) if (pit_kind == 'sklearn' and pit_scaler is not None) else X_pit_arr
-    if pit_kind == 'xgboost':
-        pit_proba = float(pit_model.predict(xgb.DMatrix(X_pit_in))[0])
-    else:
-        pit_proba = float(pit_model.predict_proba(X_pit_in)[0][1])
+    pit_proba = float(pit_model.predict(X_pit))
     pit_recommendation = 'pit now' if pit_proba > 0.65 else ('consider pit window' if pit_proba > 0.35 else 'stay out')
-    pit_factors = _shap_top_factors(_state['pitstop_explainer'], X_pit, meta['pitstop_features'])
+    pit_factors = _shap_top_factors(_state['pitstop_model'], X_pit, meta['pitstop_features'])
 
     # --- Fuel ---
     X_fuel = utils.build_feature_vector('fuel', norm_payload, encoders)
@@ -174,7 +152,7 @@ def run_prediction(payload):
                                            _state['fuel_scaler'], X_fuel)
     fuel_est = max(0.0, fuel_est)
     laps_remaining = max(0, int(total_laps - lap_number))
-    fuel_factors = _shap_top_factors(_state['fuel_explainer'], X_fuel, meta['fuel_features'])
+    fuel_factors = _shap_top_factors(_state['fuel_model'], X_fuel, meta['fuel_features'])
 
     # --- Strategy synthesis ---
     optimal_stint = int(max(5, min(45, (100 / max(deg_rate, 0.5)) * 0.6)))
@@ -270,3 +248,14 @@ class handler(BaseHTTPRequestHandler):
                 'error': str(e),
                 'trace': traceback.format_exc()[:2000],
             }).encode())
+
+
+if __name__ == '__main__':
+    server = HTTPServer(('localhost', 5000), handler)
+    print('Strategy Master API running at http://localhost:5000')
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()

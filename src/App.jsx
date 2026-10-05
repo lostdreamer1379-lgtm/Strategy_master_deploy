@@ -160,6 +160,8 @@ export default function App() {
           <Selectors form={form} setForm={setForm} onRun={run} loading={loading} />
 
           <div className="data-zone">
+            <UserGuide />
+
             {!result ? (
               <EmptyState />
             ) : (
@@ -187,6 +189,59 @@ export default function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+function UserGuide() {
+  return (
+    <section className="guide panel">
+      <div className="panel-head">
+        <div>
+          <h2>HOW TO USE STRATEGY MASTER</h2>
+          <p className="guide-intro">Enter the current race situation, then run the strategy model.</p>
+        </div>
+        <span className="guide-step">3 STEPS</span>
+      </div>
+
+      <div className="guide-steps">
+        <div className="guide-step-item">
+          <span className="guide-number">01</span>
+          <div>
+            <strong>Set the track and tyres</strong>
+            <p>Choose the circuit and the tyre currently fitted to the car.</p>
+          </div>
+        </div>
+        <div className="guide-step-item">
+          <span className="guide-number">02</span>
+          <div>
+            <strong>Match the race conditions</strong>
+            <p>Adjust tyre age, lap number, temperatures, humidity, fuel and rain.</p>
+          </div>
+        </div>
+        <div className="guide-step-item">
+          <span className="guide-number">03</span>
+          <div>
+            <strong>Run and read the call</strong>
+            <p>Use the recommendation as a pit-wall aid, not as a guaranteed race result.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="guide-settings">
+        <div><b>Tyre life</b><span>How many laps this tyre set has completed.</span></div>
+        <div><b>Lap number</b><span>Where you are in the race right now.</span></div>
+        <div><b>Track temperature</b><span>Temperature of the asphalt; this strongly affects tyre wear.</span></div>
+        <div><b>Air temperature</b><span>Ambient air temperature around the circuit.</span></div>
+        <div><b>Humidity</b><span>Moisture in the air; useful for judging changing conditions.</span></div>
+        <div><b>Fuel load</b><span>Approximate fuel currently carried by the car.</span></div>
+        <div><b>Rainfall</b><span>Turn on when the track is wet or rain is affecting the race.</span></div>
+      </div>
+
+      <p className="guide-tip">
+        <b>Quick tip:</b> start with the default values, change only what you know,
+        and rerun after a pit stop, weather change or several laps of racing.
+      </p>
+    </section>
   );
 }
 

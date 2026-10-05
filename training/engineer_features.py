@@ -17,6 +17,7 @@ RAW_PATH = os.path.join(HERE, '../data/raw/f1_strategy_data.csv')
 OUT_PATH = os.path.join(HERE, '../data/processed/f1_strategy_features.csv')
 ENCODERS_PATH = os.path.join(HERE, '../models/label_encoders.pkl')
 METADATA_PATH = os.path.join(HERE, '../models/model_metadata.json')
+ALIASES_PATH = os.path.join(HERE, 'circuit_aliases.json')
 
 
 def engineer():
@@ -31,10 +32,18 @@ def engineer():
 
     # --- Encode categoricals ---
     print("Encoding categorical features...")
+    with open(ALIASES_PATH, 'r', encoding='utf-8') as f:
+        circuit_aliases = json.load(f)
+    circuit_model_names = {
+        name: details['model'] for name, details in circuit_aliases.items()
+    }
     encoders = {}
     for col in ['circuit', 'compound', 'driver']:
         le = LabelEncoder()
-        df[f'{col}_enc'] = le.fit_transform(df[col].astype(str))
+        values = df[col].astype(str)
+        if col == 'circuit':
+            values = values.map(circuit_model_names).fillna(values)
+        df[f'{col}_enc'] = le.fit_transform(values)
         encoders[col] = le
 
     os.makedirs(os.path.dirname(ENCODERS_PATH), exist_ok=True)

@@ -1,0 +1,90 @@
+{
+  "Bahrain": {
+    "model": "Bahrain Grand Prix",
+    "config": "Bahrain"
+  },
+  "Jeddah": {
+    "model": "Jeddah",
+    "config": "Jeddah"
+  },
+  "Melbourne": {
+    "model": "Melbourne",
+    "config": "Melbourne"
+  },
+  "Baku": {
+    "model": "Baku",
+    "config": "Baku"
+  },
+  "Miami": {
+    "model": "Miami",
+    "config": "Miami"
+  },
+  "Imola": {
+    "model": "Imola",
+    "config": "Imola"
+  },
+  "Monaco": {
+    "model": "Monaco",
+    "config": "Monaco"
+  },
+  "Barcelona": {
+    "model": "Barcelona",
+    "config": "Barcelona"
+  },
+  "Montreal": {
+    "model": "Canadian Grand Prix",
+    "config": "Montreal"
+  },
+  "Silverstone": {
+    "model": "Silverstone",
+    "config": "Silverstone"
+  },
+  "Budapest": {
+    "model": "Budapest",
+    "config": "Budapest"
+  },
+  "Spa": {
+    "model": "Spa",
+    "config": "Spa"
+  },
+  "Zandvoort": {
+    "model": "Zandvoort",
+    "config": "Zandvoort"
+  },
+  "Monza": {
+    "model": "Monza",
+    "config": "Monza"
+  },
+  "Singapore": {
+    "model": "Singapore Grand Prix",
+    "config": "Singapore"
+  },
+  "Suzuka": {
+    "model": "Suzuka",
+    "config": "Suzuka"
+  },
+  "Austin": {
+    "model": "Austin",
+    "config": "Austin"
+  },
+  "Mexico City": {
+    "model": "Mexico City",
+    "config": "Mexico City"
+  },
+  "São Paulo": {
+    "model": "S\u00e3o Paulo Grand Prix",
+    "config": "S\u00e3o Paulo"
+  },
+  "Las Vegas": {
+    "model": "Las Vegas",
+    "config": "Las Vegas"
+  },
+  "Abu Dhabi": {
+    "model": "Abu Dhabi Grand Prix",
+    "config": "Abu Dhabi"
+  },
+  "Lusail": {
+    "model": "Lusail",
+    "config": "Lusail"
+  }
+}

@@ -17,7 +17,7 @@
   "Suzuka":      {"corner_ratio": 0.60, "abrasiveness": 7, "speed_index": 8, "lap_length_km": 5.81},
   "Austin":      {"corner_ratio": 0.60, "abrasiveness": 7, "speed_index": 7, "lap_length_km": 5.51},
   "Mexico City": {"corner_ratio": 0.55, "abrasiveness": 6, "speed_index": 7, "lap_length_km": 4.30},
-  "São Paulo":   {"corner_ratio": 0.60, "abrasiveness": 7, "speed_index": 7, "lap_length_km": 4.31},
+  "S\u00e3o Paulo": {"corner_ratio": 0.60, "abrasiveness": 7, "speed_index": 7, "lap_length_km": 4.31},
   "Las Vegas":   {"corner_ratio": 0.30, "abrasiveness": 7, "speed_index": 9, "lap_length_km": 6.20},
   "Abu Dhabi":   {"corner_ratio": 0.55, "abrasiveness": 6, "speed_index": 7, "lap_length_km": 5.28},
   "Lusail":      {"corner_ratio": 0.55, "abrasiveness": 8, "speed_index": 8, "lap_length_km": 5.38}

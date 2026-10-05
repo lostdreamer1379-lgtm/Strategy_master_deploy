@@ -83,11 +83,22 @@ npm install
 npm start
 ```
 
-The UI works even before you've trained any models or deployed the API —
-if `/api/predict` isn't reachable, it falls back to a local deterministic
-heuristic so you can see every part of the interface immediately. Once
-your API is live, it's used automatically and the footer will show which
-model is serving each prediction instead of "demo mode."
+`npm start` runs the React dev server and the local Python API together. The
+frontend proxies `/api/predict` to the Python process, so it uses the locally
+trained models in `models/production/` instead of the browser demo heuristic.
+Install the Python dependencies first:
+
+```bash
+cd training
+pip install -r ../requirements.txt
+cd ..
+npm start
+```
+
+The browser footer should show the model sources, for example
+`models: deg=random_forest · pit=xgboost · fuel=xgboost`. If you only want to
+run the React frontend without the local Python API, use
+`npm run start:frontend`; it will fall back to demo mode.
 
 ---
 
@@ -97,6 +108,11 @@ model is serving each prediction instead of "demo mode."
 vercel login
 vercel --prod
 ```
+
+`.vercelignore` excludes the local FastF1 cache, generated datasets, training
+artifacts, and non-production models from the upload. The deployment keeps the
+promoted models in `models/production/` and the shared training configuration
+files required by the API.
 
 Vercel builds the React app and deploys `api/predict.py` as a serverless
 function automatically per `vercel.json`. Make sure `models/production/`

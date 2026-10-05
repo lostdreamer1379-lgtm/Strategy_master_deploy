@@ -10,6 +10,7 @@ import json
 import numpy as np
 import joblib
 import shutil
+import struct
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -256,6 +257,10 @@ MODEL_FILE_MAP = {
 def _promote(best_name, predictor):
     model_file, scaler_file = MODEL_FILE_MAP[predictor][best_name]
     src = os.path.join(MODELS_DIR, model_file)
+    if predictor == 'degradation' and best_name == 'random_forest':
+        _export_random_forest(src, os.path.join(PRODUCTION_DIR, 'model_degradation_BEST.rfbin'))
+        return
+
     ext = os.path.splitext(model_file)[1]
     dst = os.path.join(PRODUCTION_DIR, f'model_{predictor}_BEST{ext}')
     shutil.copy2(src, dst)
@@ -265,6 +270,26 @@ def _promote(best_name, predictor):
             os.path.join(MODELS_DIR, scaler_file),
             os.path.join(PRODUCTION_DIR, f'scaler_{predictor}_BEST.pkl')
         )
+
+
+def _export_random_forest(src, dst):
+    """Export the degradation forest without requiring sklearn at inference."""
+    forest = joblib.load(src)
+    with open(dst, 'wb') as f:
+        f.write(b'RFB1')
+        f.write(struct.pack('<II', forest.n_features_in_, len(forest.estimators_)))
+        for estimator in forest.estimators_:
+            tree = estimator.tree_
+            f.write(struct.pack('<I', tree.node_count))
+            for i in range(tree.node_count):
+                f.write(struct.pack(
+                    '<iiiff',
+                    int(tree.children_left[i]),
+                    int(tree.children_right[i]),
+                    int(tree.feature[i]),
+                    float(tree.threshold[i]),
+                    float(tree.value[i][0][0]),
+                ))
 
 
 def main():

@@ -1,0 +1,25 @@
+# Local dependencies and Vercel build cache
+node_modules/
+.vercel/
+
+# FastF1 cache and generated datasets
+data/cache/
+data/raw/
+data/processed/
+
+# Training-only code and generated evaluation artifacts
+training/*.py
+evaluation_report/
+
+# Training-only model files; production/ contains only the promoted models
+models/*.pkl
+models/xgb_*.json
+models/test_split_*
+models/shap_*
+models/production/model_degradation_BEST.pkl
+
+# Local Python caches and unrelated project files
+**/__pycache__/
+*.pyc
+README.md
+F1_ANALYTICS_README.md

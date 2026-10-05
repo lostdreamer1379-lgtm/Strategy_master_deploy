@@ -11,6 +11,7 @@ import json
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CIRCUITS_PATH = os.path.join(HERE, '../training/circuits_config.json')
+ALIASES_PATH = os.path.join(HERE, '../training/circuit_aliases.json')
 COMPOUNDS_PATH = os.path.join(HERE, '../training/compounds_config.json')
 METADATA_PATH = os.path.join(HERE, '../models/model_metadata.json')
 
@@ -20,13 +21,17 @@ DEFAULT_COMPOUND = {'durability': 5, 'grip': 5, 'optimal_temp_c': 80, 'fuel_mult
 _circuits_config = None
 _compounds_config = None
 _metadata = None
+_circuit_aliases = None
 
 
 def _load_configs():
-    global _circuits_config, _compounds_config
+    global _circuits_config, _compounds_config, _circuit_aliases
     if _circuits_config is None:
         with open(CIRCUITS_PATH, 'r') as f:
             _circuits_config = json.load(f)
+    if _circuit_aliases is None:
+        with open(ALIASES_PATH, 'r', encoding='utf-8') as f:
+            _circuit_aliases = json.load(f)
     if _compounds_config is None:
         with open(COMPOUNDS_PATH, 'r') as f:
             _compounds_config = json.load(f)
@@ -42,7 +47,13 @@ def get_metadata():
 
 def get_circuit_features(circuit):
     _load_configs()
-    return _circuits_config.get(circuit, DEFAULT_CIRCUIT)
+    alias = _circuit_aliases.get(circuit, {})
+    return _circuits_config.get(alias.get('config', circuit), DEFAULT_CIRCUIT)
+
+
+def get_model_circuit_name(circuit):
+    _load_configs()
+    return _circuit_aliases.get(circuit, {}).get('model', circuit)
 
 
 def get_compound_features(compound):
@@ -62,7 +73,7 @@ def list_compounds():
 
 def encode_label(value, encoder_classes):
     """Mimic sklearn LabelEncoder.transform for a single value using the
-    fitted classes_ array, falling back to 0 for unseen labels."""
+    fitted classes array, falling back to 0 for unseen labels."""
     classes = list(encoder_classes)
     try:
         return classes.index(value)
@@ -94,8 +105,8 @@ def build_feature_vector(predictor, payload, encoders):
     circ = get_circuit_features(circuit)
     comp = get_compound_features(compound)
 
-    circuit_enc = encode_label(circuit, encoders['circuit'].classes_)
-    compound_enc = encode_label(compound, encoders['compound'].classes_)
+    circuit_enc = encode_label(get_model_circuit_name(circuit), encoders['circuit'])
+    compound_enc = encode_label(compound, encoders['compound'])
 
     tyre_life = float(payload.get('tyre_life', 1))
     stint_lap = float(payload.get('stint_lap', tyre_life))
