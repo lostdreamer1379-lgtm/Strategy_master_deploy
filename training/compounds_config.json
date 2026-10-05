@@ -1,0 +1,8 @@
+{
+  "SOFT":         {"durability": 3, "grip": 9, "optimal_temp_c": 95, "fuel_mult": 1.0},
+  "MEDIUM":       {"durability": 5, "grip": 7, "optimal_temp_c": 85, "fuel_mult": 1.0},
+  "HARD":         {"durability": 8, "grip": 5, "optimal_temp_c": 75, "fuel_mult": 1.0},
+  "INTERMEDIATE": {"durability": 6, "grip": 6, "optimal_temp_c": 65, "fuel_mult": 1.05},
+  "WET":          {"durability": 7, "grip": 4, "optimal_temp_c": 55, "fuel_mult": 1.1},
+  "UNKNOWN":      {"durability": 5, "grip": 5, "optimal_temp_c": 80, "fuel_mult": 1.0}
+}

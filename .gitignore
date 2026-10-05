@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Build
+/build
+
+# Data (regenerate via training pipeline)
+data/cache/
+data/raw/*.csv
+data/processed/*.csv
+
+# Models (regenerate via training pipeline)
+models/*.pkl
+models/*.json
+!models/model_metadata.json
+models/production/
+
+# Evaluation output
+evaluation_report/*.png
+evaluation_report/*.json
+
+# Env
+.env
+.env.local
+.vercel
+
+# OS
+.DS_Store
+
+.vercel
